@@ -11,6 +11,12 @@ headplane:
       value: ""
       secretName: ~
       secretKey: "cookie-secret"
+    headscale:
+      enabled: true
+      apiKey:
+        value: ""
+        secretName: ~
+        secretKey: "api-key"
     oidc:
       enabled: false
       issuerUrl: ""
@@ -22,10 +28,6 @@ headplane:
         value: ""
         secretName: ~
         secretKey: "client-secret"
-      headscaleApiKey:
-        value: ""
-        secretName: ~
-        secretKey: "api-key"
   persistence:
     enabled: false
     pvc:
@@ -51,7 +53,15 @@ headplane:
     labels: []
   gateway:
     enabled: false
+
+standalone:
+  headscaleConfig:
+    # secretKey and name needs to be defined
+    secret: {}
+    configMap: {}
+
 headscale:
+  enabled: false
   image:
     repository: headscale/headscale
     pullPolicy: IfNotPresent

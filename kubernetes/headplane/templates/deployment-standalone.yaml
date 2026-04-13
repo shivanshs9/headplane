@@ -1,0 +1,96 @@
+{{- if not .Values.headscale.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "headplane.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "headplane.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "headplane.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        {{- include "headplane.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/configmap-headplane: {{ include (print $.Template.BasePath "/headplane/configmap.yaml") . | sha256sum }}
+        checksum/secret-headplane: {{ include (print $.Template.BasePath "/headplane/secrets.yaml") . | sha256sum }}
+    spec:
+      hostAliases: {{- toYaml .Values.hostAliases | nindent 8 }}
+      serviceAccountName: {{ include "headplane.fullname" . }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: headplane
+          image: "{{ required "headplane image repository required" .Values.headplane.image.repository }}:{{ .Values.headplane.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ required "headplane image pull policy required" .Values.headplane.image.pullPolicy }}
+          env:
+            - name: HEADPLANE_DEBUG_LOG
+              value: {{ .Values.headplane.config.debug | quote }}
+            - name: HEADPLANE_LOAD_ENV_OVERRIDES
+              value: "true"
+            - name: HEADPLANE_INTEGRATION__KUBERNETES__POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - name: app
+              containerPort: 3000
+              protocol: TCP
+          securityContext: {{- toYaml .Values.headplane.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: headplane-config
+              mountPath: /etc/headplane
+            - name: headplane-server-cookie-secret
+              mountPath: /var/secrets/headplane/server
+            {{- if .Values.headplane.config.oidc.enabled }}
+            - name: headplane-oidc-client-secret
+              mountPath: /var/secrets/headplane/oidc
+            {{- end }}
+            - name: headplane-oidc-headscale-api-key
+              mountPath: /var/secrets/headplane/headscale
+            - name: headplane-data
+              mountPath: /var/lib/headplane
+              readOnly: false
+            - name: headscale-config
+              mountPath: /etc/headscale
+      volumes:
+        ###
+        ### Headplane Volumes ###
+        ###
+        - name: headplane-config
+          configMap:
+            name: headplane
+        - name: headplane-server-cookie-secret
+          secret:
+            secretName: {{ default "headplane-cookie-secret" .Values.headplane.config.cookieSecret.secretName }}
+        {{- if .Values.headplane.config.oidc.enabled }}
+        - name: headplane-oidc-client-secret
+          secret:
+            secretName: {{ default "headplane-oidc-client-secret" .Values.headplane.config.oidc.clientSecret.secretName }}
+        {{- end }}
+        - name: headplane-oidc-headscale-api-key
+          secret:
+            secretName: {{ default "headscale-api-key" .Values.headplane.config.headscale.apiKey.secretName }}
+            items:
+             - key: "headplane.api_key"
+               path: "headplane.api_key"
+        - name: headplane-data
+          {{- if .Values.headplane.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: headplane-data
+          {{- else }}
+          emptyDir:
+            sizeLimit: 500Mi
+          {{- end }}
+        - name: headscale-config
+          secret:
+            secretName: {{ .Values.standalone.headscaleConfig.secret.name }}
+            items:
+             - key: {{ .Values.standalone.headscaleConfig.secret.key }}
+               path: "config.yaml"
+{{- end }}

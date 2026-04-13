@@ -1,19 +1,24 @@
----
+{{- if .Values.headscale.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: headplane-integrated
+  name: {{ include "headplane.fullname" . }}-integrated
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "headplane.labels" . | nindent 4 }}
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: headplane-integrated
+      {{- include "headplane.selectorLabels" . | nindent 6 }}
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
         app: headplane-integrated
+        {{- include "headplane.selectorLabels" . | nindent 8 }}
       annotations:
         checksum/configmap-headplane: {{ include (print $.Template.BasePath "/headplane/configmap.yaml") . | sha256sum }}
         checksum/secret-headplane: {{ include (print $.Template.BasePath "/headplane/secrets.yaml") . | sha256sum }}
@@ -97,7 +102,7 @@ spec:
                   fieldRef:
                     fieldPath: metadata.namespace
             - name: HEADSCALE_SECRET_NAME
-              value: {{ default "headscale-api-key" .Values.headplane.config.oidc.headscaleApiKey.secretName }}
+              value: {{ default "headscale-api-key" .Values.headplane.config.headscale.apiKey.secretName }}
             - name: HEADSCALE_POD_SELECTOR
               value: "app=headplane-integrated"
           command: [ "bash", "-c" ]
@@ -129,7 +134,7 @@ spec:
             secretName: {{ default "headplane-oidc-client-secret" .Values.headplane.config.oidc.clientSecret.secretName }}
         - name: headplane-oidc-headscale-api-key
           secret:
-            secretName: {{ default "headscale-api-key" .Values.headplane.config.oidc.headscaleApiKey.secretName }}
+            secretName: {{ default "headscale-api-key" .Values.headplane.config.headscale.apiKey.secretName }}
         {{- end }}
         - name: headplane-data
           {{- if .Values.headplane.persistence.enabled }}
@@ -164,3 +169,4 @@ spec:
           emptyDir:
             sizeLimit: 500Mi
           {{- end }}
+{{- end }}

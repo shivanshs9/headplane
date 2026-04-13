@@ -3,6 +3,9 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: headplane-scripts
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "headplane.labels" . | nindent 4 }}
 data:
   ensure-headscale-api-key.sh: |
     set -e
@@ -52,7 +55,7 @@ data:
 
 
     echo "Checking 'headscale' container status in pod '$HEADPLANE_POD' for readiness..."
-    
+
     container_ready=$(kubectl get pod -n "$NAMESPACE" "$HEADPLANE_POD" -o jsonpath="{.status.initContainerStatuses[?(@.name==\"headscale\")].ready}" 2>/dev/null || echo "")
 
     if [[ "$container_ready" == "true" ]]; then
@@ -79,7 +82,7 @@ data:
             POD_IP="127.0.0.1"
             echo "Could not retrieve IP for pod '$HEADPLANE_POD'. Using default."
         fi
-        
+
         HEADSCALE_HOST="http://$POD_IP"
         echo "HEADSCALE_HOST set to: '$HEADSCALE_HOST'"
     fi

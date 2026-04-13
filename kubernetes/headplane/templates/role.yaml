@@ -1,7 +1,10 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: headplane-integrated
+  name: {{ include "headplane.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "headplane.labels" . | nindent 4 }}
 rules:
 - apiGroups: ['apps']
   resources: ['deployments']

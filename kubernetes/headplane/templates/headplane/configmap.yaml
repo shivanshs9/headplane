@@ -2,6 +2,9 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: headplane
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "headplane.labels" . | nindent 4 }}
 data:
   config.yaml: |
     server:
@@ -10,12 +13,16 @@ data:
       cookie_secret_path: /var/secrets/headplane/server/{{ .Values.headplane.config.cookieSecret.secretKey }}
       cookie_secure: true
     headscale:
+      public_url: {{ default .Values.headscale.config.url .Values.headplane.config.headscale.public_url }}
+      {{- if .Values.headscale.enabled }}
       url: http://127.0.0.1:8080
-      {{- if .Values.headscale.config.url }}
-      public_url: {{ .Values.headscale.config.url }}
-      {{- end }}
+      {{- else }}
       config_path: /etc/headscale/config.yaml
-      config_strict: true
+      config_strict: false
+      url: {{ .Values.headplane.config.headscale.url }}
+      {{- end }}
+      # api_key: ""
+      api_key_path: /var/secrets/headplane/headscale/{{ .Values.headplane.config.headscale.apiKey.secretKey }}
     integration:
       kubernetes:
         enabled: true
@@ -28,6 +35,5 @@ data:
       client_secret_path: /var/secrets/headplane/oidc/{{ .Values.headplane.config.oidc.clientSecret.secretKey }}
       disable_api_key_login: {{ .Values.headplane.config.oidc.disableApiKeyLogin }}
       token_endpoint_auth_method: {{ .Values.headplane.config.oidc.tokenEndpointAuthMethod }}
-      headscale_api_key_path: /var/secrets/headplane/headscale/{{ .Values.headplane.config.oidc.headscaleApiKey.secretKey }}
       redirect_uri: {{ .Values.headplane.config.url }}/admin/oidc/callback
     {{- end }}

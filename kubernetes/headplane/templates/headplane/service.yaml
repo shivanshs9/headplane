@@ -2,7 +2,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: headplane
+  name: {{ include "headplane.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "headplane.labels" . | nindent 4 }}
 spec:
   ports:
   - name: headplane-ui
@@ -10,5 +13,5 @@ spec:
     protocol: TCP
     targetPort: app
   selector:
-    app: headplane-integrated
+    {{- include "headplane.selectorLabels" . | nindent 4 }}
   type: ClusterIP
