@@ -12,6 +12,7 @@ data:
       port: 3000
       cookie_secret_path: /var/secrets/headplane/server/{{ .Values.headplane.config.cookieSecret.secretKey }}
       cookie_secure: true
+      base_url: {{ .Values.headplane.config.url }}
     headscale:
       public_url: {{ default .Values.headscale.config.url .Values.headplane.config.headscale.public_url }}
       {{- if .Values.headscale.enabled }}
@@ -31,9 +32,10 @@ data:
     {{- if .Values.headplane.config.oidc.enabled }}
     oidc:
       issuer: {{ .Values.headplane.config.oidc.issuerUrl }}
+      {{- if .Values.headplane.config.oidc.injectCredsViaMount }}
       client_id: {{ .Values.headplane.config.oidc.clientId }}
       client_secret_path: /var/secrets/headplane/oidc/{{ .Values.headplane.config.oidc.clientSecret.secretKey }}
+      {{- end }}
       disable_api_key_login: {{ .Values.headplane.config.oidc.disableApiKeyLogin }}
       token_endpoint_auth_method: {{ .Values.headplane.config.oidc.tokenEndpointAuthMethod }}
-      redirect_uri: {{ .Values.headplane.config.url }}/admin/oidc/callback
     {{- end }}

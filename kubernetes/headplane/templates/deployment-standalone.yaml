@@ -29,6 +29,9 @@ spec:
           image: "{{ required "headplane image repository required" .Values.headplane.image.repository }}:{{ .Values.headplane.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ required "headplane image pull policy required" .Values.headplane.image.pullPolicy }}
           env:
+            {{- with .Values.headplane.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
             - name: HEADPLANE_DEBUG_LOG
               value: {{ .Values.headplane.config.debug | quote }}
             - name: HEADPLANE_LOAD_ENV_OVERRIDES
@@ -47,7 +50,7 @@ spec:
               mountPath: /etc/headplane
             - name: headplane-server-cookie-secret
               mountPath: /var/secrets/headplane/server
-            {{- if .Values.headplane.config.oidc.enabled }}
+            {{- if and .Values.headplane.config.oidc.injectCredsViaMount .Values.headplane.config.oidc.enabled }}
             - name: headplane-oidc-client-secret
               mountPath: /var/secrets/headplane/oidc
             {{- end }}
@@ -56,6 +59,7 @@ spec:
             - name: headplane-data
               mountPath: /var/lib/headplane
               readOnly: false
+              subPath: headplane
             - name: headscale-config
               mountPath: /etc/headscale
       volumes:
@@ -68,7 +72,7 @@ spec:
         - name: headplane-server-cookie-secret
           secret:
             secretName: {{ default "headplane-cookie-secret" .Values.headplane.config.cookieSecret.secretName }}
-        {{- if .Values.headplane.config.oidc.enabled }}
+        {{- if and .Values.headplane.config.oidc.injectCredsViaMount .Values.headplane.config.oidc.enabled }}
         - name: headplane-oidc-client-secret
           secret:
             secretName: {{ default "headplane-oidc-client-secret" .Values.headplane.config.oidc.clientSecret.secretName }}

@@ -3,6 +3,7 @@ headplane:
     repository: ghcr.io/tale/headplane
     pullPolicy: IfNotPresent
     tag: ""
+  env: []
   config:
     url: https://headplane.example.com
     debug: false
@@ -23,6 +24,7 @@ headplane:
       disableApiKeyLogin: false
       tokenEndpointAuthMethod: client_secret_post
       redirectUri: ""
+      injectCredsViaMount: true
       clientId: ""
       clientSecret:
         value: ""
