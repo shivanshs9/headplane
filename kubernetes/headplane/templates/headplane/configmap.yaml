@@ -18,7 +18,7 @@ data:
       url: http://127.0.0.1:8080
       {{- else }}
       config_path: /etc/headscale/config.yaml
-      config_strict: false
+      config_strict: true
       url: {{ .Values.headplane.config.headscale.url }}
       {{- end }}
       # api_key: ""
